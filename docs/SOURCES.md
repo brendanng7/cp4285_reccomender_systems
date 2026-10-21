@@ -14,6 +14,8 @@ Migrated 28 September 2026. Paths below are relative to the repository root and 
 | `local/sources/group-3-design-critique-v1.2.pdf` | Draft team deck reviewed in DEFENSE.md; not a final submission |
 | `local/sources/critique-template-v1.1-2026-09-17.txt` | Official public template text export; source link below |
 | `local/sources/sasrec-2018.pdf` | Local research-paper copy; arXiv link below |
+| `local/sources/ader-2007.12000v1.pdf` | ADER paper downloaded 21 October 2026; [public PDF, v1](https://arxiv.org/pdf/2007.12000v1) |
+| `local/sources/ADER-348fc21/` | Authors' source-only cache at commit `348fc2128bceb6bb3f3d8dd25ec8bbbae831af94`, file hash manifest and isolated synthetic audit checks; no dataset copies |
 
 Useful transcript anchors: 00:25:36 (A-only versus mixed updates), 00:31:02 (model families), 00:43:36 (evaluate original domain), 00:50:42 (FAISS uncertainty), 00:56:18 (continued training and imminent critique), 00:57:55–00:59:47 (roles), 01:03:17–01:04:48 (alternative setup and paper reading).
 
@@ -46,12 +48,16 @@ Inspect only relevant pages (`pdfinfo`, `pdftotext -layout`, or `pdftoppm` when 
 | [FAISS documentation](https://faiss.ai/) | Vector similarity search and clustering; distinct from learning a recommendation model | Does not choose our architecture |
 | [Koren, Bell and Volinsky (2009)](https://doi.org/10.1109/MC.2009.263), *Matrix Factorization Techniques for Recommender Systems* | User/item factor structure underlying the disjoint-parameter argument | No-interference conclusion is our conditional deduction |
 | [Krichene and Rendle (2020)](https://research.google/pubs/on-sampled-metrics-for-item-recommendation/), *On Sampled Metrics for Item Recommendation* | Sampling candidate sets can distort evaluation comparisons | Does not mandate a specific feasible catalogue size |
-| [Mi, Lin and Faltings (2020)](https://arxiv.org/abs/2007.12000), *ADER: Adaptively Distilled Exemplar Replay Towards Continual Learning for Session-based Recommendation* | Relevant example of continual recommendation and replay/distillation | Tentative identification of the meeting's “ADA” paper |
-| [ADER authors' implementation](https://github.com/doublemul/ADER) | SASRec-based implementation; DIGINETICA and YOOCHOOSE datasets | No replication or code audit performed |
+| [Mi, Lin and Faltings (2020)](https://arxiv.org/abs/2007.12000), *ADER: Adaptively Distilled Exemplar Replay Towards Continual Learning for Session-based Recommendation* | Continual session recommendation with replay/distillation; user supplied this paper on 21 October | Identification in earlier meeting audio remains an inference; no team-wide reproduction choice established |
+| [ADER authors' implementation](https://github.com/doublemul/ADER/tree/348fc2128bceb6bb3f3d8dd25ec8bbbae831af94) | Inspected SASRec, replay, training, evaluation and preprocessing code; see [protocol and discrepancies](ADER.md) | Local TensorFlow synthetic verification and two-window smoke passed with a recorded compatibility fix; no research result reproduced |
 
 The “ADA” identification is an inference from the EPFL affiliation and similar-sounding dataset names. The matching datasets are e-commerce clickstreams. Do not report the transcript's “Digitec/YouTube” or its RNN recollection as verified paper facts. Ask the team to confirm its original link before choosing a reproduction target.
 
 Follow-up: the supplied reference chat explicitly names ADER, so it is now a confirmed reference in Hongyi's material, while a team decision to reproduce it remains unconfirmed. The [full paper](https://arxiv.org/html/2007.12000v1), §3.2, uses next-window evaluation; our proposed fixed-A retention test differs. The other chat's full bibliography has not been exhaustively audited.
+
+### ADER inspection on 21 October 2026
+
+Read `ader-2007.12000v1.pdf` in full and visually checked Algorithms 1–2 and Eqs. 1–4 (pp. 4–5), Table 2 (p. 6), and Figure 2 / Tables 3–4 (p. 7). Inspected all seven Python files, README, both environment descriptions and license at the pinned authors' commit. The [replication protocol](ADER.md) distinguishes paper statements, released behavior, synthetic checks and proposed project changes, including validation overlap/reuse, filtered test contexts, replay underfill, an ER-loss bug and an inconsistent Table 4 metric. Published period files were inventoried from repository metadata but not acquired. All numerical paper targets remain external claims.
 
 Additional sources checked for the neural workstream:
 

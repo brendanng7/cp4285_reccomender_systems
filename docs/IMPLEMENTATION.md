@@ -19,6 +19,8 @@ uv run --with jupyterlab jupyter lab notebooks/01_shared_experiment.ipynb
 
 The optional launcher may be installed through uv. Restart the kernel and Run All. This checks synthetic plumbing, not a real recommender experiment or browser certification.
 
+For the separately isolated authors' ADER implementation, see [local verification and cluster handoff](ADER.md#local-verification-and-cluster-handoff). `scripts/verify_ader.py` checks synthetic TensorFlow behavior and a two-window upstream smoke run; it is not a shared-package model or a real-data experiment runner.
+
 ## Outputs and failures
 
 `run(...)` requires a **new** output directory. It writes `prepared.json` (supplied inputs), `manifest.json` (provenance/settings/source fingerprints) and `results.json` (validation trace and fixed-test records). `plot_results(...)` reads saved results; it never starts training. There is no durable model checkpoint or interrupted-run resume yet.

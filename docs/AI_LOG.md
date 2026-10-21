@@ -1,5 +1,33 @@
 # AI assistance log
 
+## 21 October 2026 — Local TensorFlow verification and cluster handoff
+
+**Request:** Verify code locally while the user investigates SoC cluster access, following their choice to begin replication with the authors' implementation.
+
+**Assistance:** Created an isolated Python 3.11 / TensorFlow 2.15.1 / NumPy 1.26.4 compatibility environment. Added a portable source-hash-checked synthetic verifier, minimal dependency pins and three offline safety tests. Exercised the actual upstream model, independently checked losses/gradients and restored optimizer state. Confirmed that the unmodified entry point fails at second-window replay extraction on modern NumPy; recorded a list-comprehension fix in a disposable copy and completed two synthetic windows. CPU runs also record a device configuration edit. Updated the protocol/runbook, context, navigation and reviewer checkpoint. Applied the ponytail skill; no subagents or cluster actions were used.
+
+**Validation:** All 12 TensorFlow checks passed in `runs/ader-verify-20261021-03/`, including two-window execution. Model dimensions match the paper while data and active vocabularies are tiny. All 13 repository tests, Ruff lint/format and whitespace checks passed. The shared environment was synchronized with the existing lockfile; TensorFlow dependencies remain separate. Source cache is unchanged; output contains the exact smoke-run patch, checkpoints, logs and environment versions.
+
+**Limits:** No research dataset acquisition, published-result reproduction, full-data resource profile or GPU verification. The newer local runtime is not demonstrated equivalent to the authors' historical environment. Deterministic next-step restart is tested with dropout disabled; whole-process/sampler/RNG resume and other baselines remain unchecked. The upstream validation and early-stopping issues remain explicitly documented rather than silently changed.
+
+## 21 October 2026 — ADER paper review and replication protocol
+
+**Request:** Read the ADER paper, inspect the authors' code and define a replication protocol.
+
+**Assistance:** Read the nine-page arXiv v1 paper and visually checked the algorithms, losses and result tables. Inspected all seven Python files, README, both environment descriptions and license in `doublemul/ADER` at commit `348fc2128bceb6bb3f3d8dd25ec8bbbae831af94`. Recorded the code/paper details, methodological differences and execution gaps in [ADER.md](ADER.md), with a proposed DIGINETICA ADER-versus-Dropout first milestone, full-table extensions, checks and artifact requirements. Updated context, source provenance, README navigation and the dated reviewer checkpoint. Used the ponytail and write-page skills, preserving repository documentation as the destination; no subagents were used.
+
+**Validation:** All eleven cached upstream files match their Git blob hashes. Eight isolated synthetic checks passed for prefix validation overlap, unknown-item bridging, replay underfill, scalar-loss selection, metric cutoffs, missing preprocessing import, zero-score stopping and boolean parsing. These checks use extracted upstream definitions and existing local NumPy 2.5.4, without importing TensorFlow. Equations and table values were checked against rendered PDF pages.
+
+**Limits:** No real dataset was downloaded, no dependency environment was installed, and no model training or full TensorFlow run occurred. The plan distinguishes an author-program reproduction from the changes required by the shared benchmark's holdout rules; it does not establish a team decision to change those rules or run expensive experiments. Performance targets are from the paper, and resource figures are calculated estimates. Source cache, PDF and audit harness remain ignored; the public documentation links to primary sources.
+
+## 21 October 2026 — ADER exploration setup
+
+**Request:** Create a new branch for exploring ADER and download the paper.
+
+**Assistance:** Created `feat/ader-exploration` from the clean `feat/boiler-plate` checkout, checked the supplied arXiv reference and downloaded version 1 to ignored `local/sources/ader-2007.12000v1.pdf`. Recorded its public link and updated the context. Prior trials remain on the archive branch at `69a163a`.
+
+**Limits:** No implementation, paper analysis, training or reproduction performed. The PDF stays local and is not intended for a public commit.
+
 ## 25 September 2026 — Project initialization
 
 **Tool:** OpenAI Codex, including two internal agents for independent transcript synthesis and technical checking.

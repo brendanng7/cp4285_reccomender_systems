@@ -670,9 +670,11 @@
       <aside aria-label="Page navigation">
         <div class="brand">CP4285 / FIELD GUIDE</div>
         <nav aria-label="Contents">
-          <a href="#reset-checkpoint"
-            ><strong>Latest · 20 · Research reset</strong></a
+          <a href="#ader-verification"
+            ><strong>Latest · 22 · ADER verification</strong></a
           >
+          <a href="#ader-checkpoint">21 · ADER protocol</a>
+          <a href="#reset-checkpoint">20 · Research reset</a>
           <a href="#slides-checkpoint">19 · Team deck</a>
           <a href="#layout-checkpoint">18 · Package layout</a>
           <a href="#sasrec-architecture">17 · SASRec explained</a>
@@ -720,7 +722,14 @@
             tabindex="-1"
             role="note"
           >
-            <strong>Current review checkpoint — 16 October 2026.</strong>
+            <strong>Current review checkpoint — 21 October 2026.</strong>
+            The ADER paper and authors' pinned implementation have been reviewed;
+            <a href="docs/ADER.md">the draft replication protocol</a> records
+            next-window evaluation, replay and validation discrepancies. Twelve
+            local TensorFlow synthetic checks now pass, including two upstream
+            training windows with a recorded NumPy compatibility fix. No real-data
+            run or shared-package ADER model has been added. See
+            <a href="#ader-verification">section 22: local verification</a>.
             The trial implementation has been retired with the user's
             authorization. The active code is now two packages:
             <code>cp4285.experiment</code> and <code>cp4285.models</code>, with
@@ -3936,6 +3945,65 @@ uv run pytest -q</code></pre>
               href="https://github.com/Hong-yiii/cp4285_reccomender_systems/tree/8b9edd3"
               >Pre-reset source snapshot</a
             >
+          </p>
+        </section>
+        <section id="ader-checkpoint">
+          <div class="eyebrow">21 · 21 October 2026 · Paper and source review</div>
+          <h2>ADER replication protocol</h2>
+          <p>
+            <a href="docs/ADER.md">The ADER protocol</a> proposes a first
+            comparison on DIGINETICA: ADER versus the dropout baseline over all
+            16 next-window evaluations. It records the authors' source at commit
+            <code>348fc2128bceb6bb3f3d8dd25ec8bbbae831af94</code>, published
+            hyperparameters, Recall/MRR targets, validation selection and replay
+            mechanics. This is a proposal for review, not an implemented model.
+          </p>
+          <p>
+            The released program splits validation after expanding session
+            prefixes and later includes validation examples in replay. The
+            protocol distinguishes reproducing that program from a project
+            implementation that preserves holdout isolation. ADER's evolving
+            next-window evaluation needs a separate temporal experiment flow;
+            it is not the fixed A/B retention experiment in the current sample.
+          </p>
+          <p>
+            Eight isolated synthetic checks confirmed code behaviors and edge
+            cases, including replay underfill and the loss-based selection bug.
+            The paper's algorithms, equations and tables were visually checked.
+            No real dataset, full TensorFlow execution or training result was
+            produced. Public documentation links the sources; local copies and
+            the audit harness remain ignored.
+          </p>
+          <p class="small">
+            <a href="docs/ADER.md">Protocol and discrepancies</a> ·
+            <a href="docs/SOURCES.md">Sources</a> ·
+            <a href="#review-status">Current status</a>
+          </p>
+        </section>
+        <section id="ader-verification">
+          <div class="eyebrow">22 · 21 October 2026 · Local execution</div>
+          <h2>ADER synthetic verification</h2>
+          <p>
+            The authors' pinned TensorFlow model runs on the laptop CPU in an
+            isolated Python 3.11 / TensorFlow 2.15.1 environment. Twelve checks
+            pass: data and metric behavior, independent loss/gradient checks,
+            herding, deterministic inference, optimizer restoration and two
+            training windows through the upstream entry point. All 13 repository
+            tests and Ruff checks also pass.
+          </p>
+          <p>
+            Modern NumPy rejects upstream replay extraction at the second window.
+            The verifier records a small compatibility fix in a disposable source
+            copy, plus a CPU-device setting; the pinned originals stay unchanged.
+            Synthetic metrics are debugging evidence only. Full-data performance,
+            GPU compatibility, historical-runtime parity and complete stochastic
+            process resume remain unverified. The user is investigating cluster
+            access; no cluster job has been submitted.
+          </p>
+          <p class="small">
+            <a href="docs/ADER.md#local-verification-and-cluster-handoff">Commands and limits</a> ·
+            <a href="scripts/verify_ader.py">Portable verifier</a> ·
+            <a href="#review-status">Current status</a>
           </p>
         </section>
         <footer>

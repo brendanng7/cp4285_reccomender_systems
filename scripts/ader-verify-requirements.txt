@@ -1,0 +1,4 @@
+# Local compatibility check, not the authors' historical TensorFlow environment.
+tensorflow==2.15.1
+numpy==1.26.4
+tqdm==4.66.5

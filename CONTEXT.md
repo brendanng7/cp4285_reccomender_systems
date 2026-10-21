@@ -1,6 +1,10 @@
 # Project context
 
-Snapshot: **16 October 2026**. Read this first, then [Packages and building rules](docs/PACKAGES-AND-BUILDING.md) and the [October meeting synthesis](docs/MEETING-2026-10-15.md).
+Snapshot: **21 October 2026**. Read this first, then [Packages and building rules](docs/PACKAGES-AND-BUILDING.md) and the [October meeting synthesis](docs/MEETING-2026-10-15.md).
+
+**Current exploration:** the user requested ADER replication work on `feat/ader-exploration`, starting from the clean `feat/boiler-plate` checkout. Prior embedding/Amazon trials are saved separately on `archive/experimental-models-2026-10-21` at `69a163a`. [ADER reading and replication protocol](docs/ADER.md) records the paper, authors' source pinned to `348fc2128bceb6bb3f3d8dd25ec8bbbae831af94`, discrepancies and a DIGINETICA ADER-versus-Dropout first milestone. The user chose to begin with the authors' implementation and authorized local verification while investigating SoC cluster access. Twelve TensorFlow synthetic checks now pass, including loss/gradient checks, optimizer restoration and two training windows through upstream `main.py` with a recorded NumPy compatibility fix. The standalone verifier lives in `scripts/`; TensorFlow stays in an ignored isolated environment. No real data, full training, cluster execution or shared-package ADER model exists yet. This user-directed exploration does not establish a finalized team protocol or change the shared holdout rules.
+
+ADER uses next-window session recommendation with per-window validation and replay, rather than the existing fixed A/B retention runner. The released code splits validation after expanding prefixes and includes validation in future replay; these choices must not silently enter the shared benchmark. Full-softmax loss, old-vocabulary distillation, actual replay size, complete state restoration and full-catalogue Recall/MRR require explicit handling. Source copies and the paper remain under ignored `local/sources/`; public references and execution limits are in the protocol.
 
 ## Current direction and ownership
 
