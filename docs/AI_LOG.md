@@ -1,5 +1,69 @@
 # AI assistance log
 
+## 21 October 2026 — Completed seed-0 comparison and commit
+
+**Request/evidence:** The user supplied the full comparison output and asked for a Git commit. Across 16 equally weighted windows, ADER Recall@20 was 0.4995867931 versus Dropout 0.4885693833; MRR@20 was 0.1725787836 versus 0.1677720335. All four metric differences favor ADER in each continuation window. Validation fingerprints differ after the initial window. This is pasted user-provided evidence, not an independently retrieved remote run.
+
+**Assistance:** Recorded the result table, paper differences, provenance and limitations in the protocol, current context, runbook and dated reviewer checkpoint. Prepared a local commit of the accumulated cluster compatibility fixes, profiling/Slurm/comparison scripts, tests and documentation. Datasets, source caches, environments, transfer archives and run artifacts remain ignored.
+
+**Validation and limits:** Repository tests, Ruff, shell syntax and Git whitespace checks were run for the commit. The earlier 16-window synthetic CPU checks passed for both methods. No additional real training or remote artifact retrieval was performed; multi-seed uncertainty, repeatability and session-isolated validation remain unchecked. No push was requested.
+
+## 21 October 2026 — Full DIGINETICA comparison preparation
+
+**Request/evidence:** After providing a passing real continuation profile (615.82 seconds, 44.85 GiB host RSS, 945 KD updates), the user authorized the full 16-window ADER-versus-Dropout milestone. The measured results are user-provided evidence, not remotely retrieved artifacts.
+
+**Assistance:** Acquired the remaining 14 DIGINETICA period files through the connected GitHub tool, verified all 17 Git blob hashes and matched every paper action count (993,483 total). Extended the existing profiler to 1–16 windows and the released Dropout branch. Added exact evaluator metrics, unweighted means, split fingerprints and baseline no-replay checks, plus a provenance-checking comparison command. Preserved original hyperparameters, RNG behavior and known validation discrepancies. Estimated approximately 101 GiB later-window host RSS from the observed two-buffer footprint; prepared a 128 GiB/12-hour ADER job and documented 16 GiB/three-hour Dropout overrides. The public cluster guide was inaccessible through the web tool, so partition names/time limits use the user's supplied `sinfo`; current node feasibility/queue state remains unqueried.
+
+**Validation:** 40 offline tests and Ruff pass. Each method completes all 16 tiny synthetic CPU windows with selected-checkpoint continuation and exact-metric collection. The ignored synthetic fixtures use a 32-item allocation and two epochs, explicitly distinct from the unchanged real settings. All real inputs pass preparation only. Shell syntax, source/input hashes and transfer archive integrity are checked for the handoff.
+
+**Limits:** No real full training was run locally or submitted remotely by the agent. Memory is an extrapolation rather than a bound. Full-process replay/RNG resume, historical TF parity, repeatability and multi-seed significance remain unverified. Datasets, transfer archives and generated runs stay ignored; no shared-package holdout rules changed.
+
+## 21 October 2026 — First real result and continuation preparation
+
+**Request and evidence:** The user supplied a passing first-window profile and authorized a real continuation window. Reported elapsed time was 220.32 seconds, peak child host RSS 20.83 GiB and sampled GPU memory 1.43 GiB. Validation selected epoch 10; test Recall@20 was 0.4922 and MRR@20 0.1771. Replay retained 27,717 examples and took 121.09 seconds. This is user-provided one-window evidence, not a retrieved artifact or paper reproduction.
+
+**Assistance:** Extended the existing profiler to one or two windows, retaining the one-window default and original hyperparameters. Added per-window artifact directories, replay/lambda/optimizer-step/KD-update records and report consistency checks. Acquired and hash-verified only the additional pinned period 2 file. Prepared a 64 GiB Slurm continuation job and ignored transfer archive. The two-window run starts from scratch because upstream checkpoints omit replay/RNG state; existing results remain untouched.
+
+**Validation:** All 31 repository tests pass. A synthetic CPU execution of the instrumented upstream loop passes both windows, including selected-checkpoint restoration and completed KD updates. Real-data preparation and input hashes pass without training. Ruff, shell syntax and transfer-manifest checks are recorded with the handoff.
+
+**Limits:** No real continuation training was run or submitted by the agent. Later-window peak memory, GPU repeatability and full-paper/baseline performance remain unverified. Data and generated artifacts remain ignored; shared-package holdout rules are unchanged.
+
+## 21 October 2026 — Successful cluster verification and first real-window pilot
+
+**Request:** After supplying a successful GPU verification report, authorize one real-data window with resource measurement before the full comparison.
+
+**Evidence:** The user's report records all 13 gates passed in 34.14 seconds on TITAN V 12 GB, Python 3.11.17 / TensorFlow 2.15.1 / NumPy 1.26.4. GPU scoring placement and the two-window entry point passed; GPU deterministic-op enforcement was disabled and disclosed. This is user-provided evidence, not a remotely retrieved artifact or paper reproduction.
+
+**Assistance:** Acquired only the two pinned DIGINETICA period files through GitHub, verified their Git blob hashes and audited counts. Prepared a one-window source-based runner and Slurm job with the original training settings, fresh run directories, source/data/environment manifests, exact patches, validation/split/checkpoint records, timings and process memory sampling. Reused the verifier's source-copy compatibility helper; added the documented first-zero-score checkpoint fix and profiling instrumentation. Prepared an ignored transfer bundle. No real-data training was run locally or remotely by the agent.
+
+**Validation:** All 24 repository tests and Ruff checks pass. The 13-gate CPU verifier passes after helper extraction. A separate, explicitly synthetic CPU self-check exercises the instrumented entry point, subprocess monitoring and split/epoch/replay outputs. Both real inputs pass preparation without training. Shell syntax, source/data hashes, artifact hashes and no-overwrite boundaries were checked.
+
+**Limits:** Full real-data runtime and peak memory remain unmeasured. The first window builds replay but has no distillation update. GPU memory sampling can miss peaks or be unavailable on MIG; host child RSS is not total job RAM. Upstream checkpoint files omit replay and RNG state, so the pilot is not resumable into the full experiment. Full 16-window performance, repeated GPU reproducibility and historical-runtime equivalence remain unverified. Data and generated outputs remain ignored.
+
+## 21 October 2026 — Legacy GPU scatter determinism incompatibility
+
+**Request:** Diagnose the upstream entry-point failure after the model/data gates passed on the cluster GPU.
+
+**Assistance:** The supplied subprocess log identifies unsupported deterministic GPU scatter updates for legacy reference variables. The authors' entry point enables deterministic-op enforcement, whereas the already-passing model checks do not. The verifier now sets `TF_DETERMINISTIC_OPS=0` for the disposable GPU smoke copy and child environment, logs the deviation and records it in the patch and report. CPU smoke retains the authors' setting. No source-cache, model equation, dependency or GPU visibility change was made. This is an execution compatibility check, not an exact or repeatable GPU reproduction.
+
+**Validation and limits:** All 18 repository tests and Ruff lint pass, including CPU/GPU launch tests checking the recorded patch, child environment, unchanged original source and preserved Slurm mapping. All 13 local CPU verification gates pass again; the updated GPU subprocess still requires a cluster rerun. Choosing a historical runtime or testing a resource-variable adaptation remains future replication work.
+
+## 21 October 2026 — Correct GPU placement in the verifier
+
+**Request:** Diagnose the user's first cluster verification failure at `global_step`.
+
+**Assistance:** Identified our strict whole-graph GPU placement as the cause: the legacy int32 variable has only a CPU kernel. Enabled TensorFlow soft placement, matching the authors' entry point, and added an executed partition-graph check requiring the scoring operation on the requested device. Retained GPU presence checks, source hashes, Slurm visibility and no-overwrite behavior. Added regression cases rejecting CPU scoring and missing placement evidence in GPU mode. Updated context and replication notes; no dependencies or authors' source were changed.
+
+**Validation and limits:** All 16 offline repository tests and Ruff lint pass. All 13 CPU verification gates pass, including executed scoring placement and two upstream training windows. No local NVIDIA GPU is available; the corrected cluster run is pending. The user's installation and failure logs are evidence of those stages, not a successful replication.
+
+## 21 October 2026 — SoC GPU verification preparation
+
+**Request:** Continue the cluster handoff after the user demonstrated Slurm access and a TITAN RTX allocation.
+
+**Assistance:** Prepared a single-task Slurm smoke job and a small ignored transfer bundle containing the verifier and hash-checked authors' source, without datasets or environments. Removed the upstream entry point's GPU visibility override in its disposable copy so it preserves Slurm's assignment. Specified a separate Python 3.11 environment with TensorFlow 2.15.1's CUDA extra, checking official uv and TensorFlow package metadata. No remote connection or job submission was performed by the agent.
+
+**Validation and limits:** All 12 local CPU synthetic checks passed again after the device handling change, along with 13 repository tests, Ruff lint, whitespace checks and Slurm script shell syntax. All 11 transferred files match the bundle manifest. These do not verify cluster GPU execution, Linux dependency installation or full-data resource use. Cluster diagnostic information comes from the user's terminal output.
+
 ## 21 October 2026 — Local TensorFlow verification and cluster handoff
 
 **Request:** Verify code locally while the user investigates SoC cluster access, following their choice to begin replication with the authors' implementation.

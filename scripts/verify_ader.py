@@ -40,8 +40,8 @@ def verify_source(source):
             raise ValueError("Source differs from pinned commit: " + name)
 
 
-def check_main(source, output, device):
-    """Run two windows in a disposable copy, recording compatibility/device edits."""
+def prepare_main(source, output, device):
+    """Copy upstream code and record compatibility/device edits without running it."""
     work = output / "upstream-main"
     work.mkdir()
     for name in ("main.py", "ADER.py", "EWC.py", "modules.py", "util.py", "LICENSE"):
@@ -50,10 +50,27 @@ def check_main(source, output, device):
     old = "np.array(exemplar_data_logits)[:, 0].tolist()"
     assert original.count(old) == 1
     patched = original.replace(old, "[record[0] for record in exemplar_data_logits]")
+    device_assignment = "os.environ['CUDA_VISIBLE_DEVICES'] = str(args.device_num)"
+    assert patched.count(device_assignment) == 1
+    patched = patched.replace(
+        device_assignment,
+        "# Preserve the caller's CUDA_VISIBLE_DEVICES (including Slurm assignments).",
+    )
+    assert device_assignment not in patched
     if device == "cpu":
         assert patched.count("config = tf.ConfigProto()") == 1
         patched = patched.replace(
             "config = tf.ConfigProto()", "config = tf.ConfigProto(device_count={'GPU': 0})"
+        )
+    else:
+        # TF 2.15 cannot enforce deterministic GPU scatter updates on legacy ref variables.
+        deterministic = "os.environ['TF_DETERMINISTIC_OPS'] = '1'"
+        assert patched.count(deterministic) == 1
+        patched = patched.replace(deterministic, "os.environ['TF_DETERMINISTIC_OPS'] = '0'")
+        print(
+            "NOTE: GPU entry-point smoke disables deterministic-op enforcement; "
+            "this does not verify run-to-run reproducibility.",
+            flush=True,
         )
     (work / "main.py").write_text(patched, encoding="utf-8")
     (output / "main-numpy-compat.patch").write_text(
@@ -67,6 +84,12 @@ def check_main(source, output, device):
         ),
         encoding="utf-8",
     )
+    return work
+
+
+def check_main(source, output, device):
+    """Run two synthetic windows in a disposable copy of the authors' entry point."""
+    work = prepare_main(source, output, device)
     data = work / "data" / "DIGINETICA"
     data.mkdir(parents=True)
     for period in range(3):
@@ -89,6 +112,8 @@ def check_main(source, output, device):
         "8",
     ]
     environment = dict(os.environ, TF_NUM_INTRAOP_THREADS="1", TF_NUM_INTEROP_THREADS="1")
+    if device == "gpu":
+        environment["TF_DETERMINISTIC_OPS"] = "0"
     with (work / "console.log").open("x", encoding="utf-8") as handle:
         subprocess.run(
             command,
@@ -110,8 +135,19 @@ def check_main(source, output, device):
         "epochs_per_window": 2,
         "patch": "main-numpy-compat.patch",
         "console": "upstream-main/console.log",
-        "limits": "Tiny synthetic inputs; no full-data, baseline, or EWC coverage.",
+        "deterministic_ops_enforced": device == "cpu",
+        "limits": "Tiny synthetic inputs; no full-data, baseline, or EWC coverage. "
+        "GPU smoke does not guarantee run-to-run reproducibility.",
     }
+
+
+def check_scoring_device(partition_graphs, node_name, device):
+    placed = [
+        node.device for graph in partition_graphs for node in graph.node if node.name == node_name
+    ]
+    if not placed or not all(f"/device:{device.upper()}:" in name for name in placed):
+        raise RuntimeError(f"Scoring operation {node_name} did not run on {device}: {placed}")
+    return placed
 
 
 def run_checks(source, output, device):
@@ -181,7 +217,8 @@ def run_checks(source, output, device):
     passed("upstream Recall/MRR boundaries at ranks 1, 10, 11, 20 and 21")
 
     config = tf.ConfigProto(
-        allow_soft_placement=False,
+        # Legacy int32 variables (global_step) require CPU, even in a GPU model.
+        allow_soft_placement=True,
         intra_op_parallelism_threads=1,
         inter_op_parallelism_threads=1,
     )
@@ -209,7 +246,17 @@ def run_checks(source, output, device):
     initial_saver = tf.train.Saver()
     with tf.Session(config=config) as session:
         session.run(tf.global_variables_initializer())
-        initial_logits, initial_loss = session.run([model.logits, model.loss], initial_feed)
+        placement = tf.RunMetadata()
+        initial_logits, initial_loss = session.run(
+            [model.logits, model.loss],
+            initial_feed,
+            options=tf.RunOptions(output_partition_graphs=True),
+            run_metadata=placement,
+        )
+        scoring_devices = check_scoring_device(
+            placement.partition_graphs, model.logits.op.name, device
+        )
+        passed("executed scoring operation is on the requested device")
         ce = -log_softmax(initial_logits)[np.arange(4), np.array(targets) - 1].mean()
         np.testing.assert_allclose(initial_loss, ce, rtol=1e-5, atol=1e-6)
         for _ in range(8):
@@ -332,6 +379,7 @@ def run_checks(source, output, device):
         "tensorflow": tf.__version__,
         "numpy": np.__version__,
         "devices": devices,
+        "scoring_devices": scoring_devices,
         "model_config": vars(args),
         "initial_loss": float(initial_loss),
         "trained_loss": trained_loss,

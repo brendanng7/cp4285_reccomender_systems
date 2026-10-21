@@ -16,6 +16,7 @@ Migrated 28 September 2026. Paths below are relative to the repository root and 
 | `local/sources/sasrec-2018.pdf` | Local research-paper copy; arXiv link below |
 | `local/sources/ader-2007.12000v1.pdf` | ADER paper downloaded 21 October 2026; [public PDF, v1](https://arxiv.org/pdf/2007.12000v1) |
 | `local/sources/ADER-348fc21/` | Authors' source-only cache at commit `348fc2128bceb6bb3f3d8dd25ec8bbbae831af94`, file hash manifest and isolated synthetic audit checks; no dataset copies |
+| `local/ader-window-inputs/` | Authorized full comparison inputs: all 17 DIGINETICA periods (0–16) at the same pinned commit, Git blob hashes checked; datasets remain ignored |
 
 Useful transcript anchors: 00:25:36 (A-only versus mixed updates), 00:31:02 (model families), 00:43:36 (evaluate original domain), 00:50:42 (FAISS uncertainty), 00:56:18 (continued training and imminent critique), 00:57:55–00:59:47 (roles), 01:03:17–01:04:48 (alternative setup and paper reading).
 

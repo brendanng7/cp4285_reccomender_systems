@@ -2,15 +2,17 @@
 
 **Draft for review, 21 October 2026.** ADER studies continual **session-based next-item recommendation**: learn from one time window, then predict clicks in the next. A useful first replication is DIGINETICA, comparing ADER with the same SASRec model using dropout but no replay. Complete all 16 evaluations before extending to YOOCHOOSE or the full baseline and ablation tables.
 
-There are two distinct replication targets. **Reproducing the released program** preserves its data and validation choices, including the problems below. **A replication suitable for our shared benchmark** preserves holdout isolation and original identities, which changes those choices and therefore cannot claim an exact reproduction of the published numbers. This protocol specifies both boundaries; it does not adopt upstream validation leakage as a project default. No ADER model or real-data run is implemented on this branch.
+There are two distinct replication targets. **Reproducing the released program** preserves its data and validation choices, including the problems below. **A replication suitable for our shared benchmark** preserves holdout isolation and original identities, which changes those choices and therefore cannot claim an exact reproduction of the published numbers. This protocol specifies both boundaries; it does not adopt upstream validation leakage as a project default. ADER is not integrated into the shared model packages. The user supplied successful initial and continuation profiles; the user has now supplied the completed full comparison. See the latest execution status below.
 
 **Execution update, 21 October 2026:** the user chose to start with the authors' implementation and authorized local verification while arranging SoC cluster access. The [standalone verifier](../scripts/verify_ader.py) now runs their TensorFlow model and a two-window synthetic training smoke check. See [local verification and cluster handoff](#local-verification-and-cluster-handoff). This is not a model integrated into the shared packages or a reproduced paper result.
+
+**Latest, 21 October 2026:** the user supplied the completed seed-0 comparison across all 16 test windows. ADER achieved Recall@20 **49.9587%** and MRR@20 **17.2579%**, versus Dropout **48.8569%** and **16.7772%**. This closely matches the paper's scores and relative advantage under the released protocol. These are user-provided comparison results, not independently retrieved remote artifacts. Validation splits differ after the initial window; single-seed uncertainty and modern TensorFlow compatibility limits remain. See [completed seed-0 results](#completed-seed-0-results).
 
 ## Sources and scope
 
 - Paper: Mi, Lin and Faltings, [ADER, arXiv:2007.12000v1](https://arxiv.org/pdf/2007.12000v1). Page numbers below refer to the **nine-page arXiv PDF**, locally `local/sources/ader-2007.12000v1.pdf`, SHA-256 `e21c50751df1996710ac4c89bde3debdbd170e34dd2da5f8e021bd6c20eab610`. Read the full paper; visually checked the algorithms, equations and result tables on pp. 4–7.
 - Authors' repository: [doublemul/ADER, commit 348fc2128bceb6bb3f3d8dd25ec8bbbae831af94](https://github.com/doublemul/ADER/tree/348fc2128bceb6bb3f3d8dd25ec8bbbae831af94), the retrieved default-branch head, dated 27 October 2021. Inspected README, both environment files, LICENSE and all seven Python files: `ADER.py`, `EWC.py`, `main.py`, `modules.py`, `util.py`, `data/preprocessing.py`, `data/util.py`.
-- An ignored source-only cache is in `local/sources/ADER-348fc21/`. `SOURCE.json` records the commit and Git blob hashes; all eleven fetched files match those hashes. The public protocol remains usable without this cache. The repository tree contains 17 period files for each dataset, but their contents were **not downloaded or verified** in this review.
+- An ignored source-only cache is in `local/sources/ADER-348fc21/`. `SOURCE.json` records the commit and Git blob hashes; all eleven fetched files match those hashes. The public protocol remains usable without this cache. At the initial review, data contents were not downloaded. Following explicit authorization, all 17 DIGINETICA files are now downloaded and verified; YOOCHOOSE data remains unacquired.
 - The source repository supplies an [MIT license][license]. Retain its notice and relevant inherited attribution when adapting code. The arXiv front page has a placeholder ACM DOI; the authors' README links the publication at [10.1145/3383313.3412218](https://doi.org/10.1145/3383313.3412218).
 
 ## What the method does
@@ -225,9 +227,131 @@ local/ader-verify-env/bin/python scripts/verify_ader.py \
 
 Reuse an existing environment rather than recreating it. On another machine, copy or retrieve the eight pinned files listed in `SOURCE_HASHES` in the script, preserving `data/` paths and the license. No research dataset is needed. Outputs include `verification.json`, TensorFlow checkpoints, generated inputs, an exact entry-point patch and console/training logs. Use a new output directory on every attempt. The local completed run is `runs/ader-verify-20261021-03/`; the ignored artifact directory also contains the installed package versions. The dependency file pins the three direct dependencies; the captured environment records transitive versions.
 
-For the cluster, first establish its supported Python, NVIDIA driver/CUDA runtime, scheduler and available GPU/RAM allocation. Run the same verifier in an allocated GPU job with `--device gpu`: the numerical model checks require a visible GPU and disable silent CPU fallback. The authors' separate entry-point smoke retains their soft-placement behavior, so it is not a GPU placement audit. Do not treat a passed newer-runtime check as equivalence to their Python 3.7 / TensorFlow 2.1 environment; rerun the checks in whichever historical or compatibility environment is selected and record the choice before comparing published numbers. No cluster login, job submission or GPU execution has happened here.
+For the cluster, establish its supported Python, NVIDIA driver/CUDA runtime, scheduler and available GPU/RAM allocation. Run the same verifier in an allocated GPU job with `--device gpu`: the numerical model checks require a visible GPU and verify the executed scoring operation's GPU placement. CPU placement is allowed for unsupported operations such as the legacy int32 training-step variable. The authors' separate entry-point smoke retains their soft-placement behavior, so it is not a GPU placement audit. Do not treat a passed newer-runtime check as equivalence to their Python 3.7 / TensorFlow 2.1 environment; rerun the checks in whichever historical or compatibility environment is selected and record the choice before comparing published numbers. Subsequent user-run cluster diagnostics are recorded below.
 
-The next experiment gate remains a single full-data window to measure elapsed time, peak host/GPU memory and actual replay storage, then the agreed 16-window ADER-versus-Dropout comparison. Full-data acquisition/training has not started. Full process resume including sampler/replay/RNG state, stochastic restart equivalence, tie behavior across devices, other baselines and cross-version numerical parity remain unchecked.
+The initial and continuation resource gates subsequently passed in user-provided cluster reports. Full DIGINETICA acquisition is complete; the agreed 16-window ADER-versus-Dropout comparison is prepared below. Full process resume including sampler/replay/RNG state, stochastic restart equivalence, tie behavior across devices, other baselines and cross-version numerical parity remain unchecked.
+
+### SoC GPU handoff
+
+The user confirmed Slurm access on 21 October, with a TITAN RTX 24 GB allocation and driver 580.178.04. The login node has Python 3.12.3, so create a separate Python 3.11 environment for this TensorFlow version. Install [uv using its official installer](https://docs.astral.sh/uv/getting-started/installation/), then run from the transferred verification directory:
+
+```sh
+uv python install 3.11
+uv venv --python 3.11 local/ader-verify-env
+uv pip install --python local/ader-verify-env/bin/python \
+  -r scripts/ader-verify-requirements.txt 'tensorflow[and-cuda]==2.15.1'
+mkdir -p runs
+uv pip freeze --python local/ader-verify-env/bin/python > runs/cluster-environment.txt
+sbatch scripts/verify_ader_slurm.sh
+```
+
+The [TensorFlow 2.15.1 package metadata](https://pypi.org/pypi/tensorflow/2.15.1/json) specifies the CUDA 12 dependencies for `and-cuda`. This environment is a proposed Linux counterpart to the tested Mac compatibility environment, not yet a verified cluster installation. The job requests one task, one `nv` GPU, two CPUs, 8 GiB host RAM and ten minutes; these are synthetic-check allocations, not full-training recommendations. The job exposes the installed NVIDIA libraries to TensorFlow and uses a unique Slurm job ID for outputs. Inspect `runs/ader-gpu-JOBID.log` and `runs/ader-gpu-JOBID/verification.json` after completion; failed runs retain their evidence.
+
+The verifier now removes the authors' unconditional `CUDA_VISIBLE_DEVICES` assignment in its disposable copy and includes that change in the generated patch. This preserves Slurm's device mapping; GPU 0 within the job refers to the visible allocation. The earlier CPU run predates this additional execution-only edit. A transfer bundle may include the working-tree verifier after commit `40e2027`; its file manifest and the verification report record exact hashes. No remote account details or research data belong in the public repository.
+
+**First cluster attempt and correction:** the user installed Python 3.11.17 and TensorFlow 2.15.1 successfully after redirecting `TMPDIR` to home storage and running dependency installation through a CPU allocation with 8 GiB RAM. The GPU job then failed on `global_step`: our verifier had disabled soft placement while assigning the whole graph to GPU, but TensorFlow's legacy int32 `VariableV2` supports only CPU in this runtime. This is a verifier placement defect, not evidence against ADER or a reason to reinstall CUDA. The verifier now enables soft placement, consistent with upstream `main.py`, and uses executed partition-graph metadata to require that the scoring matrix multiplication runs on the requested device. Missing evidence or CPU scoring in GPU mode fails explicitly. See [TensorFlow's placement guidance](https://www.tensorflow.org/guide/gpu). The new check adds one verification gate; `scoring_devices` is recorded in successful reports. Full GPU execution still awaits the user's rerun. Transfer the updated `scripts/verify_ader.py` over the original bundle version; the original archive is retained and new reports record the updated script hash. Existing failed run directories remain untouched.
+
+**Second cluster attempt:** model/data gates, including GPU scoring placement, loss/gradient checks and optimizer continuation, completed successfully. The upstream entry-point subprocess then failed on `ScatterAdd` because `main.py` sets `TF_DETERMINISTIC_OPS=1`, while TF 2.15 has no deterministic GPU implementation for scatter updates on legacy reference variables. The compatibility verifier now sets that flag to `0` in the disposable GPU smoke copy and its child environment, leaving CPU smoke and the pinned originals unchanged. It prints an explicit notice, records the exact diff, and reports `main_smoke.deterministic_ops_enforced=false`. This allows testing the training loop without promising identical GPU results across runs; it is not a full reproduction protocol change. TensorFlow documents [unsupported deterministic operations and reproducibility limitations](https://www.tensorflow.org/api_docs/python/tf/config/experimental/enable_op_determinism). For a later reproducibility-focused run, assess a historical runtime or separately validate resource-variable semantics rather than treating this compatibility smoke as sufficient evidence. The corrected GPU subprocess remains unverified pending another cluster run.
+
+## First real-window resource pilot
+
+The initial authorized pilot was **DIGINETICA period 0 training, period 1 testing**, using only those two released files at the pinned source commit. This is initial cross-entropy training followed by replay construction; no distillation update occurs until the next window. A one-window metric cannot be compared directly with Table 2's 16-window mean or establish an advantage over Dropout.
+
+The downloaded files remain ignored under `local/ader-window-inputs/`. Their Git blob hashes are `5f2f70ec5544f82ee74b8df78b77334f637e7883` (period 0) and `c02fc6de4fe15a41f4d686c78cb6d5b43259abb6` (period 1), verified against the pinned repository tree. The [first file](https://github.com/doublemul/ADER/blob/348fc2128bceb6bb3f3d8dd25ec8bbbae831af94/data/DIGINETICA/period_0.txt) contains 70,739 actions, 15,076 sessions, 18,569 contiguous item IDs and 55,663 next-item prefixes. Five singleton fragments add five rows to the upstream sampler before its split. The [second file](https://github.com/doublemul/ADER/blob/348fc2128bceb6bb3f3d8dd25ec8bbbae831af94/data/DIGINETICA/period_1.txt) has 37,586 actions and 7,896 sessions; upstream known-item filtering and singleton removal leave 29,952 actions, 6,847 sessions and 23,105 test prefixes. Counts were audited locally without real-data training.
+
+`scripts/profile_ader_window.py` verifies source and data hashes before creating a fresh run directory, copies exactly two period files by default (three with `--windows 2`), and runs upstream `main.py`. It uses seed 0, width 150, two blocks, length 50, current batch 256, evaluation batch 64, learning rate 0.0005, dropout 0.3, up to 100 epochs with validation Recall@20 patience 5, and replay budget 30,000. The tested NumPy and GPU-visibility fixes are reused; deterministic GPU operations remain unenforced. The profile also initializes the early-stop counter and makes the first checkpoint eligible at zero validation score, as required by the inspection finding. The exact combined diff is retained in `profile-main.patch`. No validation, filtering, ranking, herding or loss changes are made.
+
+The Slurm job requests one A100 40 GB allocation, four CPUs, 64 GiB host memory and a three-hour limit. These are provisional ceilings, not observed requirements. Host memory accounts for upstream Python-list teacher logits; GPU memory alone does not describe replay storage. No environment reinstall is required. After transferring/extracting the pilot bundle into the existing cluster directory:
+
+```sh
+mkdir -p runs
+sbatch scripts/profile_ader_window_slurm.sh
+```
+
+Use the printed job ID to inspect `runs/ader-window0-JOBID.log` and `runs/ader-window0-JOBID/console.log`. The latter receives upstream training progress. The directory also retains:
+
+- `manifest.json`: source/data/script hashes, all installed package versions, command, counts and limits.
+- `profile.json`: final status, elapsed time, selected epoch, test Recall/MRR, epoch timings, herding time and actual replay size. Upstream metrics are rounded to four decimals.
+- `gpu-memory.jsonl`: samples for the training PID only, at approximately two-second intervals. Peak GPU memory is a sampled lower bound; unsupported MIG readings remain null, not zero.
+- `upstream-main/results/DIGINETICA-ADER/`: original training log, selected checkpoint, runtime/build information, training/validation prefix contents and candidate IDs, per-epoch validation/timing history and replay metadata.
+
+Host peak RSS is the maximum across child processes (normally the training process), not total job RAM; Slurm accounting can provide a separate view. If the scheduler kills the job, logs, manifest and completed checkpoints remain but a final profile may be absent. Use a new job/run directory for retries. Upstream checkpoints do not persist replay and sampler/RNG state, so this pilot is not a resumable first stage of the full 16-window run. Do not silently increase epochs or change hyperparameters based on period 1 test metrics.
+
+Local validation: 24 offline tests, Ruff checks and the unchanged 13-gate CPU verifier pass. An additional synthetic CPU run of the instrumented entry point checks epoch/split/replay artifact creation and process monitoring. It uses only tiny generated data and is labelled accordingly. The two real input files pass `--prepare-only`, which does not train. The user subsequently supplied a successful first-window report, summarized below. The agent has not submitted a cluster job.
+
+## First-window result and real continuation pilot
+
+**User-provided evidence, 21 October 2026:** the first real-window profile reports `status=passed`, return code 0 and 220.32 seconds total. Peak child host RSS was 21,328.70 MiB (20.83 GiB); sampled GPU peak was 1,468 MiB (1.43 GiB), with no monitor errors. Epoch 10 was selected by validation Recall@20 (0.49353), with training stopping after epoch 15. Test Recall@20 was 0.4922, MRR@20 0.1771, Recall@10 0.3760 and MRR@10 0.1690 (four-decimal upstream precision). Replay construction took 121.09 seconds and stored 27,717 examples for 18,569 active items. These values were pasted by the user, not independently retrieved. The metrics cover only the initial window, which has no distillation, and do not establish the paper's comparison with Dropout.
+
+The user authorized **one real continuation window** next. Run initial period 0 → test 1 and continuation period 1 → test 2 together in a fresh process. The first pilot's checkpoint lacks the replay buffer and sampler/RNG state, so it cannot faithfully resume this workflow by itself. The rerun may differ numerically because GPU deterministic-op enforcement remains disabled; preserve both runs.
+
+The additional [period 2 input](https://github.com/doublemul/ADER/blob/348fc2128bceb6bb3f3d8dd25ec8bbbae831af94/data/DIGINETICA/period_2.txt) has pinned Git blob hash `3e1fe1dde546f4bc98df2d60a3dee1065fbf0020`. At continuation, cumulative known items grow to 22,692. The training period has 37,586 actions, 7,896 sessions and 29,690 next-item prefixes; 87 singleton fragments add rows to the released sampler. Period 2 has 31,089 raw actions in 6,453 sessions. Filtering with the continuation vocabulary leaves 26,522 actions, 5,863 sessions and 20,659 test prefixes. Future test items never enlarge the current candidate set in this audit. Upstream reuses period 1 as training after its initial test evaluation, as specified by the chronological next-window protocol.
+
+The same profiler now accepts `--windows 2`; its default remains one window. The new Slurm entry point requests one A100 40 GB allocation, four CPUs, **64 GiB RAM**, and three hours. No environment reinstall or change to the paper hyperparameters is needed. After extracting the continuation bundle into the existing cluster directory:
+
+```sh
+mkdir -p runs
+sbatch scripts/profile_ader_continuation_slurm.sh
+```
+
+For the returned job ID, inspect `runs/ader-continuation-JOBID.log`, `runs/ader-continuation-JOBID/console.log` and, after completion, `runs/ader-continuation-JOBID/profile.json`. The report contains process-wide memory/time and a `windows` list with separate metrics, validation histories, selected epochs and replay timings. Under `upstream-main/results/DIGINETICA-ADER/profile-period1/` and `profile-period2/`, the profiler records splits, candidates, runtime, replay input/batch counts, adaptive lambda, optimizer steps before/after training and at checkpoint selection, and completed KD update counts. A successful report requires the second window to restore the first window's **selected** step, consume its actual replay size, use the expected adaptive lambda and complete one distillation update per training batch. These checks complement the existing synthetic loss/gradient and full optimizer-restoration gates; the real pilot does not independently re-prove tensor-level state equivalence.
+
+Local validation: **31 repository tests pass**, including refusal of incomplete logs, missing distillation, incorrect lambda, altered replay sizes and inconsistent optimizer steps. A two-window synthetic CPU self-check also passes with the new instrumentation and report collection; it verifies restoration from the selected epoch rather than the final training epoch. Real inputs pass preparation only; no real-data training was run locally. The user subsequently supplied a successful continuation report, summarized below. Memory sampling limitations, upstream validation overlap/reuse, omitted resumable replay/RNG state and unverified GPU repeatability still apply. The full 16-window baseline comparison is not started.
+
+## Full 16-window comparison
+
+**Continuation evidence supplied by the user:** both windows passed in 615.82 seconds. Peak child host RSS was 45,930.21 MiB (44.85 GiB), sampled peak GPU memory was 1,468 MiB, and no monitor errors were reported. The first selected checkpoint was step 1,960 (epoch 10); continuation restored that step, consumed 27,696 replay examples in batches of 263, used lambda 0.7356937873 and completed 945 KD updates (105 batches × 9 epochs). Continuation selected epoch 4 and tested at Recall@20 0.5040 / MRR@20 0.1818. Its replacement replay had 27,965 examples. These figures came from pasted output; the agent did not retrieve or independently rerun the real experiment. First-window Recall@20 changed from 0.4922 to 0.4939 across runs, consistent with the disclosed lack of exact GPU repeatability. Cross-window metric differences use different test periods and do not isolate a distillation effect.
+
+**Frozen scope:** one complete seed-0 ADER run and one complete seed-0 Dropout run, each training periods 0–15 and testing periods 1–16. Use the fixed defaults above, not settings chosen from the pilot test scores. The Dropout command adds `--dropout True` and changes only the output label; dropout rate remains 0.3, with no replay or distillation. Both restore model/Adam state from the previous selected checkpoint. Keep the authors' validation split generation, unknown-item filtering and RNG consumption. Consequently, the methods can have different validation splits after the initial window. Saved split hashes disclose this; matched validation splits would be a separate methodological variant. This is an author-artifact comparison under the recorded modern TensorFlow compatibility changes, not an exact historical-environment reproduction.
+
+All 17 DIGINETICA files under ignored `local/ader-window-inputs/` are hash-pinned in the profiler. Every period action count matches Table 1, totaling **993,483**. Active training catalogue sizes, in order, are 18,569; 22,692; 25,306; 27,636; 29,619; 32,585; 34,596; 36,691; 38,501; 40,135; 41,197; 41,868; 42,369; 42,826; 43,023; 43,105. Period 16 is only evaluated and never expands the training catalogue. Per-window counts/filtering losses and file SHA-256s are retained in each manifest.
+
+**Resource estimate:** on 64-bit CPython, a stored Python float plus a list pointer is approximately 32 bytes. Two nominal 30,000-example buffers at the final two training widths (43,023 and 43,105) account for about **77.00 GiB** before other working memory. Scaling the measured continuation RSS by the ratio of these logit-cell counts to the observed old/new replay buffers gives about **100.88 GiB**. This assumes comparable overhead and is not a guaranteed peak. Retain the original storage representation for this author-code run; do not silently switch to NumPy arrays. Request **128 GiB host RAM** and one A100-40 allocation for ADER, with a **12-hour ceiling on `gpu-long`**. Dropout has no dense replay: request **16 GiB** and a **three-hour ceiling on `gpu`**. These requests use the partitions reported by the user; their current queue availability and whether a node can satisfy 128 GiB have not been queried remotely. Limits are not runtime forecasts. If submission is rejected, inspect the scheduler reason before changing the scientific settings.
+
+After transferring/extracting the full bundle into the existing cluster working directory, reuse the installed environment:
+
+```sh
+mkdir -p runs
+sbatch scripts/run_ader_full_slurm.sh ader
+sbatch --partition=gpu --mem=16G --time=03:00:00 --job-name=dropout-full \
+  scripts/run_ader_full_slurm.sh dropout
+```
+
+The jobs are independent. ADER writes `runs/ader-full-ADER_JOBID/` and `runs/ader-full-ADER_JOBID.log`; Dropout writes `runs/dropout-full-DROPOUT_JOBID/` and the matching `.log`. Follow each run's `console.log` for progress. Check `squeue -j JOBID` while queued/running and `sacct -j JOBID --format=JobID,State,Elapsed,MaxRSS,ExitCode` after completion. A scheduler-killed job can lack `profile.json`; preserve its evidence. Neither job resumes the pilot, and a timed-out process cannot resume solely from its model checkpoints. No remote submission was performed by the agent.
+
+Each completed report contains full-precision evaluator metrics for every window, the **unweighted 16-window mean**, selection traces, selected optimizer steps, continuation/KD counts, replay size/time, split hashes and process resource measurements. Full-precision `metrics.json` files are written from the existing test evaluator result without running test inference again. Upstream four-decimal text logs remain available for consistency checks. A successful ADER report requires the replay/lambda/optimizer checks at every continuation; a successful Dropout report requires no replay or KD at any window. The last ADER window still builds replay, preserving the upstream loop even though no further update consumes it.
+
+When **both** jobs have passed, replace the job-ID placeholders and run:
+
+```sh
+local/ader-verify-env/bin/python scripts/compare_ader_runs.py \
+  --ader runs/ader-full-ADER_JOBID \
+  --dropout runs/dropout-full-DROPOUT_JOBID \
+  --output runs/ader-vs-dropout-seed0.json
+```
+
+The comparison refuses missing periods, failed runs, non-default commands, differing source/data/script/environment fingerprints or candidate catalogue sizes. It recomputes the unweighted means, reports ADER-minus-Dropout and differences from Table 2 in **percentage points**, and lists which validation splits match. It does not select a seed/run or invent a significance threshold. Use a new comparison filename if one already exists.
+
+**Local checks:** 40 repository tests and Ruff pass. Both ADER and Dropout completed all 16 synthetic CPU windows, testing repeated checkpoint handoffs and the last-window collection path. Only those ignored synthetic fixtures reduce the allocated item table to 32 and use two epochs/tiny replay; real-run settings retain all paper defaults. Real-data preparation checks all hashes/counts without training. This verifies execution plumbing, not full-data performance, later-window peak memory or GPU numerical parity. The complete real comparison, repeat-seed checks, seeds 1/2, other baselines, YOOCHOOSE and resumable replay/RNG state remain outside the completed work.
+
+## Completed seed-0 results
+
+The user supplied output from `compare_ader_runs.py` for the two completed cluster runs. The comparison command checks successful status, all 16 ordered windows, default commands, matching source/data/script/package fingerprints and candidate catalogue sizes, then recomputes unweighted means. The agent reviewed this pasted output; it has not downloaded the original reports/checkpoints or independently rerun the real experiment. No full-run peak memory or ADER elapsed-time figure was included in that comparison, so the earlier resource estimate remains an estimate.
+
+All scores below are **percentages**, averaged equally across the 16 test windows. Paper targets are Table 2, p. 6 of `ader-2007.12000v1.pdf`.
+
+| Metric | Paper ADER | Observed ADER | Paper Dropout | Observed Dropout | Observed ADER advantage (pp) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Recall@20 | 50.21 | 49.9587 | 49.07 | 48.8569 | +1.1017 |
+| Recall@10 | 37.52 | 37.3614 | 36.53 | 36.3926 | +0.9688 |
+| MRR@20 | 17.32 | 17.2579 | 16.86 | 16.7772 | +0.4807 |
+| MRR@10 | 16.45 | 16.3859 | 16.00 | 15.9134 | +0.4725 |
+
+ADER is below the paper by 0.2513 pp in Recall@20 and 0.0621 pp in MRR@20. Its advantage over Dropout closely tracks the paper's 1.14 pp Recall@20 and 0.46 pp MRR@20 differences. It leads on every metric in each of the 15 continuation windows. The initial window has no distillation; small method-run differences there must not be attributed to replay.
+
+Validation split fingerprints match only for test period 1 and differ for periods 2–16, as anticipated from method-dependent RNG consumption. This result reproduces the released procedure, including its overlapping prefixes and validation reuse, rather than establishing holdout isolation. It supports the statement that this seed-0 modern-runtime reproduction closely matches the published scores and direction of the ADER/Dropout comparison. It does not establish statistical significance, exact historical-runtime parity or an isolated causal effect of distillation.
+
+Proposed next checks, not yet executed: preserve complete remote run artifacts, repeat seed 0 to measure execution variability, then run predeclared seeds 1 and 2 with frozen settings. A matched, session-isolated validation variant would be a separate methodological comparison.
 
 [paper]: https://arxiv.org/pdf/2007.12000v1
 [main]: https://github.com/doublemul/ADER/blob/348fc2128bceb6bb3f3d8dd25ec8bbbae831af94/main.py

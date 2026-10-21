@@ -20,7 +20,7 @@
 | `src/cp4285/models/` | Model implementations and model-side ablations; currently only a counting isolation control |
 | `notebooks/` | Reader-facing executable explanation, importing both packages |
 | `tests/` | Contract/lifecycle checks; executable documentation and notebook examples |
-| `scripts/` | Standalone upstream ADER synthetic verification; isolated environment and commands in [the ADER protocol](docs/ADER.md#local-verification-and-cluster-handoff) |
+| `scripts/` | Standalone upstream ADER verification and [DIGINETICA ADER/Dropout comparison](docs/ADER.md#full-16-window-comparison), using an isolated environment |
 | `docs/` | Methods, decisions, historical research reasoning and AI-use log |
 | `slides/` | Team Google Slides pointer and historical authored figures |
 | `reference.html` | Preserved historical walkthrough with dated current-status checkpoints |

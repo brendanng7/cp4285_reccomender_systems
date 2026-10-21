@@ -670,9 +670,11 @@
       <aside aria-label="Page navigation">
         <div class="brand">CP4285 / FIELD GUIDE</div>
         <nav aria-label="Contents">
-          <a href="#ader-verification"
-            ><strong>Latest · 22 · ADER verification</strong></a
-          >
+          <a href="#ader-seed0-results"><strong>Latest · 26 · Seed-0 results</strong></a>
+          <a href="#ader-full-comparison">25 · Full comparison</a>
+          <a href="#ader-continuation">24 · Real continuation</a>
+          <a href="#ader-resource-pilot">23 · First real window</a>
+          <a href="#ader-verification">22 · ADER verification</a>
           <a href="#ader-checkpoint">21 · ADER protocol</a>
           <a href="#reset-checkpoint">20 · Research reset</a>
           <a href="#slides-checkpoint">19 · Team deck</a>
@@ -725,11 +727,14 @@
             <strong>Current review checkpoint — 21 October 2026.</strong>
             The ADER paper and authors' pinned implementation have been reviewed;
             <a href="docs/ADER.md">the draft replication protocol</a> records
-            next-window evaluation, replay and validation discrepancies. Twelve
-            local TensorFlow synthetic checks now pass, including two upstream
-            training windows with a recorded NumPy compatibility fix. No real-data
-            run or shared-package ADER model has been added. See
-            <a href="#ader-verification">section 22: local verification</a>.
+            next-window evaluation, replay and validation discrepancies. All 13
+            synthetic verification checks passed on the user's cluster GPU with
+            documented compatibility changes. The user supplied the completed
+            16-window seed-0 comparison: ADER Recall@20 49.9587% versus Dropout
+            48.8569%, and MRR@20 17.2579% versus 16.7772%. These closely track
+            the published scores and relative advantage, with the original
+            validation limitations retained. See
+            <a href="#ader-seed0-results">section 26: seed-0 results</a>.
             The trial implementation has been retired with the user's
             authorization. The active code is now two packages:
             <code>cp4285.experiment</code> and <code>cp4285.models</code>, with
@@ -3997,12 +4002,134 @@ uv run pytest -q</code></pre>
             copy, plus a CPU-device setting; the pinned originals stay unchanged.
             Synthetic metrics are debugging evidence only. Full-data performance,
             GPU compatibility, historical-runtime parity and complete stochastic
-            process resume remain unverified. The user is investigating cluster
-            access; no cluster job has been submitted.
+            process resume remain unverified. The user subsequently confirmed
+            SoC Slurm access and a TITAN RTX diagnostic allocation. A single-task
+            GPU verification job and source-only transfer bundle are prepared;
+            no cluster ADER result has been received. The verifier now preserves
+            Slurm's GPU visibility in its disposable upstream copy, and the local
+            checks pass again after that change.
+          </p>
+          <p>
+            The first cluster verification exposed a verifier placement bug:
+            TensorFlow cannot place its legacy integer training-step variable on
+            GPU. The corrected verifier permits CPU placement for unsupported
+            operations and checks executed scoring placement explicitly. Those
+            model checks subsequently passed on the cluster. The upstream loop
+            then hit unsupported deterministic GPU scatter updates on legacy
+            variables. Its disposable GPU smoke copy now explicitly disables
+            deterministic-op enforcement and records that deviation; the rerun
+            is pending and run-to-run GPU reproducibility remains unverified.
+            Existing failed-run evidence is retained.
           </p>
           <p class="small">
             <a href="docs/ADER.md#local-verification-and-cluster-handoff">Commands and limits</a> ·
             <a href="scripts/verify_ader.py">Portable verifier</a> ·
+            <a href="#review-status">Current status</a>
+          </p>
+        </section>
+        <section id="ader-resource-pilot">
+          <div class="eyebrow">23 · 21 October 2026 · Cluster resource pilot</div>
+          <h2>First real DIGINETICA window</h2>
+          <p>
+            The user's cluster report passed all 13 synthetic gates in 34.14
+            seconds on TITAN V 12 GB, including actual GPU scoring and the
+            two-window training loop. It retains the disclosed compatibility
+            changes and does not establish repeatability or published results.
+          </p>
+          <p>
+            The next authorized run trains on period 0, tests on period 1, and
+            builds replay memory. Those two released inputs are hash-verified;
+            period 0 has 70,739 actions and 18,569 active items. A standalone
+            Slurm profile records timing, host RSS, sampled GPU memory,
+            validation history, split contents and selected checkpoints. It
+            preserves original training settings and the reviewed upstream
+            validation behavior. No real-data training result is available yet.
+          </p>
+          <p>
+            This initial window has no distillation update. One-window metrics
+            are not the paper's 16-window mean; the pilot is not a resumable
+            full experiment. All 24 repository tests and local synthetic checks
+            pass, while the real GPU resource measurement remains pending.
+          </p>
+          <p class="small">
+            <a href="docs/ADER.md#first-real-window-resource-pilot">Run instructions and limits</a> ·
+            <a href="scripts/profile_ader_window.py">Window profiler</a> ·
+            <a href="#review-status">Current status</a>
+          </p>
+        </section>
+        <section id="ader-continuation">
+          <div class="eyebrow">24 · 21 October 2026 · Real continuation preparation</div>
+          <h2>Initial window passed; measure replay next</h2>
+          <p>
+            The user supplied a passing first-window report: 220.32 seconds,
+            20.83 GiB peak child host RSS and 1.43 GiB sampled GPU memory.
+            Validation selected epoch 10; test Recall@20 was 0.4922 and MRR@20
+            0.1771. Building 27,717 replay examples took 121.09 seconds.
+            These are one-window measurements, not the paper's 16-window means.
+          </p>
+          <p>
+            The authorized next pilot runs periods 0 → 1 and 1 → 2 together,
+            retaining the 64 GiB allocation and original hyperparameters.
+            It reruns the initial window because checkpoints omit replay and
+            RNG state. Three pinned inputs are verified; per-window records
+            check replay handoff, adaptive lambda, selected optimizer steps
+            and completed distillation updates. All 31 offline tests and the
+            two-window synthetic CPU check pass. The real GPU continuation
+            and its memory requirements remain unmeasured.
+          </p>
+          <p class="small">
+            <a href="docs/ADER.md#first-window-result-and-real-continuation-pilot">Run instructions and limits</a> ·
+            <a href="scripts/profile_ader_continuation_slurm.sh">Continuation job</a> ·
+            <a href="#review-status">Current status</a>
+          </p>
+        </section>
+        <section id="ader-full-comparison">
+          <div class="eyebrow">25 · 21 October 2026 · Full comparison preparation</div>
+          <h2>Run ADER and Dropout across all 16 windows</h2>
+          <p>
+            The user's real continuation restored selected step 1,960 and
+            completed 945 distillation updates, using 44.85 GiB peak child host
+            RSS. All 17 DIGINETICA inputs now match pinned hashes and the
+            paper's 993,483 action total. The final training catalogue has
+            43,105 items; scaling measured replay storage suggests about 101
+            GiB host RAM. The prepared ADER job requests 128 GiB and 12 hours;
+            Dropout uses 16 GiB and three hours. These are provisional resource
+            ceilings, not measured full-run requirements.
+          </p>
+          <p>
+            Both methods retain seed 0 and the released hyperparameters/RNG
+            behavior. Reports save full-precision per-window metrics and
+            unweighted means; the comparison checks provenance, reports
+            percentage-point differences and discloses different validation
+            splits. All 40 repository tests and both 16-window synthetic CPU
+            checks pass. Real full runs remain to be submitted; GPU repeatability,
+            full-process resume and paper-level performance are not established.
+          </p>
+          <p class="small">
+            <a href="docs/ADER.md#full-16-window-comparison">Commands and protocol</a> ·
+            <a href="scripts/run_ader_full_slurm.sh">Full-run Slurm job</a> ·
+            <a href="scripts/compare_ader_runs.py">Result comparison</a>
+          </p>
+        </section>
+        <section id="ader-seed0-results">
+          <div class="eyebrow">26 · 21 October 2026 · Completed seed-0 comparison</div>
+          <h2>ADER's released-protocol advantage reproduced in one seed</h2>
+          <p>
+            The user supplied the completed 16-window comparison. ADER reached
+            Recall@20 49.9587% and MRR@20 17.2579%, versus Dropout 48.8569%
+            and 16.7772%. The advantages, 1.1017 and 0.4807 percentage points,
+            closely track the paper's 1.14 and 0.46 points. Every continuation
+            window favors ADER on all four metrics.
+          </p>
+          <p>
+            This is user-provided evidence; the original remote artifacts have
+            not been retrieved by the agent. Validation splits differ after the
+            initial window and upstream overlap/reuse remains. One seed does
+            not establish statistical significance, exact GPU repeatability or
+            historical-runtime parity. No additional training was launched.
+          </p>
+          <p class="small">
+            <a href="docs/ADER.md#completed-seed-0-results">Result table and limits</a> ·
             <a href="#review-status">Current status</a>
           </p>
         </section>

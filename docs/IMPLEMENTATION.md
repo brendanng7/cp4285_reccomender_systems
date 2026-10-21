@@ -21,6 +21,8 @@ The optional launcher may be installed through uv. Restart the kernel and Run Al
 
 For the separately isolated authors' ADER implementation, see [local verification and cluster handoff](ADER.md#local-verification-and-cluster-handoff). `scripts/verify_ader.py` checks synthetic TensorFlow behavior and a two-window upstream smoke run; it is not a shared-package model or a real-data experiment runner.
 
+The separately authorized ADER study passed initial and continuation resource pilots in user-provided reports. The [full 16-window comparison](ADER.md#full-16-window-comparison) uses `scripts/profile_ader_window.py --windows 16 --method ader|dropout`, `scripts/run_ader_full_slurm.sh` and `scripts/compare_ader_runs.py`. It retains the released evaluation choices and records compatibility differences, exact metrics and split fingerprints. Run it in the isolated cluster environment; it is outside the fixed A/B sample API. The user supplied a completed seed-0 comparison: see [results and limits](ADER.md#completed-seed-0-results). Full remote artifacts have not been retrieved by the agent.
+
 ## Outputs and failures
 
 `run(...)` requires a **new** output directory. It writes `prepared.json` (supplied inputs), `manifest.json` (provenance/settings/source fingerprints) and `results.json` (validation trace and fixed-test records). `plot_results(...)` reads saved results; it never starts training. There is no durable model checkpoint or interrupted-run resume yet.
