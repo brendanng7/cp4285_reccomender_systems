@@ -1,5 +1,97 @@
 # AI assistance log
 
+## 25 October 2026 — Full Amazon category training and validation
+
+**Request:** Continue the Amazon Electronics next-subcategory experiment on the SoC cluster and check the completed validation job.
+
+**Assistance:** Ran the full eight-period comparison for seeds 0, 1 and 2, pairing ADER replay/distillation with the same dropout-only model. Kept validation unopened until all training jobs passed, then scored the fixed one-query-per-person validation set for all six checkpoints. TensorFlow 2.15 Grappler crashed during legacy GPU inference; reproduced it on a real validation history and restored checkpoint, then verified that disabling the meta optimizer lets batch sizes 1 and 256 score correctly. Applied that session setting to the evaluator. No test data was read. Updated the protocol/runbook, context and reviewer checkpoint with the completed result.
+
+**Evidence:** Training jobs 1013143, 1013599 and 1013600 completed all 19,478,807 training examples in each method/seed (76,096 updates per method/seed). Validation job 1014004 completed in 5m11s and scored 1,547,555 queries against 283 candidates. Three-seed mean (sample SD): Dropout Recall@1 41.8348% (0.2098 pp), Recall@3 66.3715% (0.1627 pp), MRR@3 0.524956 (0.001617); ADER Recall@1 41.8506% (0.0980 pp), Recall@3 66.4103% (0.2123 pp), MRR@3 0.525209 (0.001281). The ADER gains were 0.0158 pp, 0.0389 pp and 0.000253 respectively. Outputs/checkpoints remain ignored on SoC; ignored local copies of the validation JSON and provenance manifest are under `local/`. The report records per-seed and observed/predicted-source metrics.
+
+**Validation:** Ruff and Python compilation for the evaluator, shell syntax and `git diff --check` passed. The real-data evaluator verified hashes, label/history mappings and all checkpoint scoring; report status is `passed_validation_only`, with `test_read: false`. Direct GPU diagnostics passed on restored weights at batch sizes 1 and 256 with Grappler disabled.
+
+**Limits:** Differences between methods are much smaller than seed variation and do not establish an ADER advantage. This is not ADER's original click-session task, does not establish catastrophic forgetting, and is not final-test performance. GPU dropout repeatability is unverified. The training profile template labels its general limitation as “Seed-0 only” for every seed; seed identity and actual counters remain in each manifest/profile, and the template wording is corrected in source without rewriting raw outputs. No test queries/labels were opened and no commit was made.
+
+## 25 October 2026 — Two-period ADER category GPU pilot
+
+**Request:** Run the bounded two-period Amazon next-subcategory pilot on the SoC cluster.
+
+**Assistance:** Added a training-only runner and Slurm launcher that reuse the pinned ADER model/loss, validate prepared Parquet hashes, sample 50,000 queries per period, maintain a prefix-stable category mapping, and split period 2 into replay/KD and dropout-only branches from one period-1 model+Adam checkpoint. The pilot never opens validation/test data or calculates ranking metrics. Added local remapping/padding self-checks and sampled GPU-memory recording. Two startup errors were fixed before the successful run: the event hash's manifest location and TensorFlow's legacy int32 global-step placement. Both fixes are retained in source.
+
+**Evidence:** SoC job 1012806 completed successfully on one A100-40 in 38 seconds; the training section took 24.14 seconds. It processed 50,000 targets per period in one epoch, with 196 optimizer updates per period. Both method branches restored global step 196 and ended at step 392. ADER selected and consumed 808 of the 1,000 replay cap; teacher logits were 808 × 216 and lambda was 0.09529. Process peak RSS was 1,597 MiB; sampled GPU memory peaked at 3,015 MiB. Report: ignored `local/category-ader-pilot-1012806.json`; job log: ignored `local/category-ader-pilot-1012806.log`.
+
+**Validation:** Python compilation, pilot self-checks on a short cluster CPU allocation, Ruff, shell syntax and diff checks pass. The cluster report confirms prepared period hash, pinned ADER commit, cumulative active category counts (216/246), target counts (50,000 each), matching optimizer restoration and complete replay consumption. Validation/test were not read.
+
+**Limits:** This is only an execution/resource check. There are no validation/test metrics, no full-data result, no eight-period run, and no run-to-run GPU repeatability claim. The per-category replay allocation left 192 of its 1,000 maximum unfilled; no top-up was applied. Failed pre-training attempts remain in the cluster Slurm logs for provenance. No commit/push was requested.
+
+## 25 October 2026 — Chronological periods and Amazon ADER protocol
+
+**Request:** Continue the plan by measuring the eligible training timeline, constructing chronological periods and specifying the comparison with a no-replay neural control.
+
+**Assistance:** Profiled training-target counts by year and timestamp octile using the verified local training database only. Added a small period builder that validates exact target conservation, retains equal timestamps, preserves history references and exports a hash-checked Parquet artifact. Added cumulative category availability from training input histories and supervised targets to distinguish context-only classes. Wrote a bounded two-period resource pilot and a full ADER-category/dropout comparison protocol, including later-only validation selection and a first post-validation raw-review test cohort.
+
+**Evidence:** Eight periods each contain 2,434,850–2,434,852 of 19,478,807 training targets. They run 1999-11-17 to 2021-06-29 and have very different calendar lengths (period 1 is about 15 years). Cumulative categories seen in history/target inputs are 216,246,259,268,275,278,279,283. 271 of the frozen 283 candidates ever have supervised training targets; 12 occur only as input context. The final aggregate period job 1012758 completed in 54 seconds, with 7,532,408 KiB batch MaxRSS. Validation/test rows never set boundaries; the test partition was not read.
+
+**Validation:** All 58 repository tests pass with isolated DuckDB; Ruff, formatting and diff checks pass. Synthetic tests cover tie-preserving cuts, exact target conservation, unchanged histories, validation invariance, insufficient timestamp rejection, Parquet output and checksum verification. The executed v3 source hash matches its preserved cluster archive. No production comparison or neural run was launched.
+
+**Limits:** The three-seed v1 settings are proposals, not team-approved choices. This study predicts long-term review categories, uses a closed candidate vocabulary, and does not reproduce session-based ADER. Validation runs only after the last period. The proposed test cohort excludes users with validation-period reviews, so results describe later returners and are not a same-user forgetting matrix. Predicted categories are not independently quality-checked. No final-test data was inspected/scored and no commit/push was requested.
+
+## 25 October 2026 — Popularity and last-category baselines on frozen queries
+
+**Request:** Recalculate popularity and “repeat the last category” using the exact prepared examples.
+
+**Assistance:** Implemented simple category-ranking functions in the models package, a shared rank-count Recall/MRR evaluator, and a thin experiment/CLI workflow. Defined literal repeat-last as one prediction and separately disclosed a full-ranking last + popularity variant for top-three comparison. Popularity fits only prepared training targets; all methods share validation queries and candidates. Verified input Parquet sizes/hashes, preserved query files and recorded input/preparation/code provenance. Evaluated the authorized job directly on the SoC CPU cluster, then retrieved only aggregate reports.
+
+**Results:** Across 1,547,555 validation queries and 283 candidates, popularity Recall@1/3 is 41.9594/60.9731%, MRR@3 0.498288. Repeat-last-only Recall@1 is 28.8119%. Last + popularity Recall@3 is 62.0441%, MRR@3 0.439964: slightly greater coverage but worse rank ordering. Saved source-label/history-length slices, their denominators and the full popularity ranking. These are the baselines for the prepared cohort; earlier all-event scores used different targets and fitting counts.
+
+**Validation:** All 55 tests pass with isolated DuckDB; Ruff/format/diff checks pass. Tests cover lexical ties, zero-count candidates, last-category promotion without duplicates, missed/unseen targets, hand-calculated Recall/MRR, aggregate denominators, validation-independent rankings, missing history joins, full artifact execution, checksum rejection and overwrite protection. The cluster job completed in five seconds, exit zero; source code hashes match the executed manifest. Slurm reported 473,104 KiB batch MaxRSS, with short-run sampling limits.
+
+**Limits:** No Amazon ADER model training, final-test scoring or significance test. The observed-target slice still uses the combined-label training fit and histories. The last + popularity method is explicitly an extension of literal repeat-last, not an unspecified top-three tie policy. Label quality and the continual-training schedule remain unresolved; private data remains ignored and no commit/push was requested.
+
+## 25 October 2026 — Chronological category histories and eligibility
+
+**Request:** Construct each person's chronological category history and finalize which histories qualify, following the review-frequency audit.
+
+**Assistance:** Profiled training/development timestamp ties, repeated user/product pairs and history gaps on a CPU allocation. Implemented compact category-sequence preparation in the experiment package with a thin CLI, source/hash provenance and create-only exports. Defined this development version's eligibility: 1–50 earlier training events per target, repeated categories retained, unknown/tied groups break histories, and only the first raw validation event per returning reviewer may qualify. Kept both observed and predicted label-source flags. Did not alter the earlier audit artifacts or force the task into the fixed A/B runner.
+
+**Evidence:** 775 tied training timestamp groups (1,619 events); no validation timestamp ties or repeated training user/product pairs. Median distinct-event training gap is 75.84 days, supporting long-term review-history terminology. The completed real preparation contains 19,478,807 training targets from 6,262,964 users, 1,547,555 validation targets/users and 283 training-derived candidate categories. Median context lengths are 3 and 2. Excluded first validation targets/users are recorded: 45 unknown labels, 1,585,323 without training history and 584 ending at a history barrier. No validation targets fall outside candidates. The CPU job completed in 3m51s, about 10.51 GiB batch MaxRSS; aggregate report and manifest were retrieved and the executed code hash matches local source.
+
+**Validation:** All 51 tests pass with isolated DuckDB; standard tests pass 46 with five optional SQL checks skipped. Ruff, formatting and diff checks pass. Synthetic tests cover ordering, user isolation, repeated categories, tie/unknown barriers, one-prior-event eligibility, the 50-event cap, first-raw-target selection, unseen candidates, duplicate mappings, invariance to later held-out labels, artifact export and no-overwrite behavior.
+
+**Limits:** This is a development preparation protocol for next-review category prediction, not shopping sessions or a finalized continual ADER experiment. The first-event validation cohort changes the metric denominator, so earlier all-review popularity scores cannot be reused. Final-test queries, continual windows, observed-only sequence sensitivity, label-quality checks and neural training remain unperformed. The metadata is retrospective. Private identities/data remain ignored; no commit/push was requested or performed.
+
+## 24 October 2026 — Review frequencies and popularity baseline
+
+**Request:** Start the next-subcategory plan with provisional K=3; measure categories among actual review events and a most-popular-categories baseline before committing the evaluation cutoff.
+
+**Assistance:** Downloaded the official unsplit Electronics 0-core ratings CSV on a CPU allocation, checked size/gzip CRC and recorded SHA-256. Implemented a bounded DuckDB audit in the experiment package, with count-based Recall/MRR in the shared evaluator and a thin CLI. Verified identities and category joins; split by global timestamp quantiles before fitting popularity. Kept the latest 10% reserved; compared observed-only and observed-plus-predicted labels on validation, including a cohort with prior training reviews. Inputs/results remain ignored; dependencies are isolated from both the core package and ADER environment.
+
+**Findings:** 43,365,426 events; 283 training labels, 126 validation labels, zero unmatched products in those splits. Combined-label popularity Recall@1/3/5/20 is 42.30/61.39/80.43/99.77%; observed-only Recall@3 is 66.07%. K=20 is almost saturated without history information. The two label policies have different top-three rankings, so their difference is not a label-quality estimate. The audit first rejected two source zero ratings; after inspecting aggregate invalid-field counts, retained and flagged them because ratings are not the prediction target. No review rows were silently discarded.
+
+**Validation:** All 47 tests pass when the optional SQL dependency is included; Ruff and formatting pass. Checks cover count arithmetic, unseen targets, cold/warm cohorts, chronological boundaries, zero ratings, duplicate joins and invariance to reserved-test label changes. The successful real audit completed in 75 seconds on four CPU cores, about 4.10 GiB batch MaxRSS. Retrieved aggregate JSON and provenance; full source/download manifests remain on cluster. Updated context, source record, runbook and reviewer checkpoint.
+
+**Limits:** No Amazon ADER training or final sequence dataset yet. The global audit split is provisional, and final test-category frequencies/scores were not inspected. Label accuracy, historical availability of metadata, equal-timestamp sequence ordering, repeated-category transitions and final history eligibility remain unresolved. The results are event-level popularity baselines, not personalized next-event results. No commit or push was requested/performed.
+
+## 24 October 2026 — Meso-level target and Electronics label count
+
+**Request:** The user clarified next-subcategory prediction as the intended task, requested an exact review-history download link, and asked for actual Electronics subcategory counts before deciding Recall@K.
+
+**Assistance:** Verified the official unsplit 0-core ratings-only Electronics link from Amazon Reviews 2023 and its HTTP headers (969,766,940 compressed bytes). Read the already-downloaded Electronics Parquet in a small cluster CPU allocation using an isolated DuckDB dependency; no global or ADER package changes. Checked the file against its saved SHA-256, counted distinct products/labels by label source, and saved the complete aggregate label inventory under ignored `local/`.
+
+**Findings:** 1,610,012 distinct products; 285 non-null labels; 1,481,570 observed, 128,432 predicted and 10 unknown products. The classifier's 20 classes are a separate count; 265 observed labels have fewer than 200 products. Top-20 labels cover 99.7632% of labelled products, which is not the same as review-event coverage. No label filtering, merging, Recall@K change or interaction download was performed.
+
+**Limits:** Review histories have not been joined, so actual sequence coverage, label frequencies among review targets and metric usefulness are still unmeasured. No training or new Git commit was performed. Documentation now distinguishes the user-confirmed meso-level target from proposed input/splitting choices.
+
+## 24 October 2026 — Amazon item-category dataset acquired on SoC
+
+**Request:** The user announced newly available Codex SSH access and requested downloading `randomwish/amazon23-item-categories` onto the cluster, asking whether Hugging Face authentication was needed.
+
+**Assistance:** Checked the public dataset API/card, existing SSH alias and available remote storage. Confirmed anonymous access to the ungated repository. Submitted a small CPU acquisition job that downloaded all 73 upstream files at revision `822d4745b11748ae5e24f6619e4c6c32a501f36b` into a fresh revision directory. No Hugging Face token, dependency installation or GPU was required. A one-off standard-library script and cluster connection notes remain ignored locally; no reusable downloader framework was added.
+
+**Verification:** All 326,013,748 bytes matched upstream sizes; large-file contents matched the supplied LFS SHA-256 hashes and ordinary files matched Git blob hashes. The script also recorded SHA-256 for every downloaded file, checked completeness against the pinned repository inventory and wrote a success manifest. Transfer/verification took 90.15 seconds. The final manifest was retrieved into ignored local storage, and Slurm reported successful completion. The snapshot, source manifest and verification manifest remain on the cluster.
+
+**Limits:** This is item/category metadata with observed, predicted and unknown labels, not review interactions. No Parquet row-level audit, label-quality validation, interaction join or training was performed. No dataset content or machine-specific account details were added to tracked files; authentication secrets were not accessed.
+
 ## 21 October 2026 — Completed seed-0 comparison and commit
 
 **Request/evidence:** The user supplied the full comparison output and asked for a Git commit. Across 16 equally weighted windows, ADER Recall@20 was 0.4995867931 versus Dropout 0.4885693833; MRR@20 was 0.1725787836 versus 0.1677720335. All four metric differences favor ADER in each continuation window. Validation fingerprints differ after the initial window. This is pasted user-provided evidence, not an independently retrieved remote run.

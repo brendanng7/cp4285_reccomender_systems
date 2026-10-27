@@ -724,7 +724,34 @@
             tabindex="-1"
             role="note"
           >
-            <strong>Current review checkpoint — 21 October 2026.</strong>
+            <strong>Current review checkpoint — 25 October 2026.</strong>
+            The prepared-query baselines are complete: popularity Recall@3
+            60.97% / MRR@3 0.4983, versus last + popularity 62.04% / 0.4400.
+            Putting the last category first improves coverage slightly but worsens
+            ordering. See <a href="#amazon-category-baselines">section 29: baseline results</a>.
+            Chronological category histories are prepared: 19,478,807 training
+            examples and 1,547,555 validation examples, with one held-out next
+            review per eligible person and 1–50 earlier training reviews as input.
+            See <a href="#amazon-category-histories">section 28: history rules</a>.
+            The full eight-period comparison has trained three seeds of ADER
+            and dropout-only. Validation results are nearly tied: ADER's mean
+            gains are under 0.04 percentage points on Recall@1/3 and 0.0003
+            MRR@3. This does not establish an ADER advantage. The 1,547,555-
+            person validation cohort was scored only after all runs completed;
+            no test data was read. See
+            <a href="#amazon-ader-category-results">section 32: full-run results</a>.
+            The 19.48M training examples are partitioned into eight chronological
+            blocks of about 2.43M each. Cumulative history/target categories
+            reach 283 by the final block; 12 labels occur only as context.
+            The two-period execution pilot passed before the full run. See
+            <a href="#amazon-category-periods">section 30: periods and protocol</a>.
+            The Amazon Electronics task predicts next-review category. The review-
+            frequency audit and three-seed model comparison are complete. Training-
+            only popularity achieves Recall@3 61.39% over all review events; on the
+            prepared one-review-per-user cohort its Recall@3 is 60.97%. K=3 remains
+            provisional. The final test remains unopened. See
+            <a href="#amazon-category-audit">section 27: category audit</a>.
+            The earlier DIGINETICA replication remains documented below.
             The ADER paper and authors' pinned implementation have been reviewed;
             <a href="docs/ADER.md">the draft replication protocol</a> records
             next-window evaluation, replay and validation discrepancies. All 13
@@ -4131,6 +4158,183 @@ uv run pytest -q</code></pre>
           <p class="small">
             <a href="docs/ADER.md#completed-seed-0-results">Result table and limits</a> ·
             <a href="#review-status">Current status</a>
+          </p>
+        </section>
+        <section id="amazon-category-audit">
+          <div class="eyebrow">27 · 24 October 2026 · Amazon category audit</div>
+          <h2>Three recommendations are more informative than twenty here</h2>
+          <p>
+            Downloaded the pinned item-category metadata and official Electronics
+            review events onto the cluster. The metadata has 285 labels; the
+            preliminary chronological training and validation portions contain
+            283 and 126 respectively. All 43,365,426 events are retained, including
+            two flagged zero ratings. Ratings are not the prediction target.
+          </p>
+          <p>
+            A fixed ranking learned from training review counts scores validation
+            Recall@1/3/5/20 of 42.30% / 61.39% / 80.43% / 99.77%, with observed
+            and predicted labels. Observed-only Recall@3 is 66.07%; its top-three
+            categories differ. These are event-level popularity baselines, not
+            personalized sequence predictions. They support the user's provisional
+            K=3: K=20 almost saturates without using any history.
+          </p>
+          <p>
+            The latest 10% of reviews remain reserved, with no test-category
+            frequencies or scores inspected. Sequence construction, equal-time
+            ordering, taxonomy quality and the final ADER protocol remain open.
+            No Amazon neural training was launched. The CPU audit completed in
+            75 seconds; all 47 tests pass with the optional isolated SQL dependency.
+          </p>
+          <p class="small">
+            <a href="docs/SOURCES.md#electronics-review-event-audit">Counts, provenance and limits</a> ·
+            <a href="docs/IMPLEMENTATION.md#electronics-category-audit">Run the audit</a> ·
+            <a href="#review-status">Current status</a>
+          </p>
+        </section>
+        <section id="amazon-category-histories">
+          <div class="eyebrow">28 · 25 October 2026 · Category histories prepared</div>
+          <h2>Predict one person's next review category from their earlier reviews</h2>
+          <p>
+            The user authorized building chronological histories and defining
+            eligibility. Training now has 19,478,807 prediction examples from
+            6,262,964 people; validation has one example for each of 1,547,555
+            eligible people. Candidates are the 283 usable training categories.
+            Contexts contain 1–50 earlier training reviews; median lengths are
+            three for training and two for validation.
+          </p>
+          <p>
+            Repeated categories stay. Unknown labels and ambiguous timestamp
+            groups break the history. Validation considers each person's first
+            raw post-training review, then checks eligibility; it does not skip
+            invalid first events or consume held-out reviews as later inputs.
+            People without usable training history are outside this cohort.
+          </p>
+          <p>
+            The CPU preparation took 3m51s and about 10.51 GiB peak batch memory.
+            Private Parquet files retain source identities and label flags;
+            aggregate reports preserve exclusion counts and hashes. All 51 tests
+            pass with optional DuckDB. Earlier all-review popularity scores need
+            recomputation on these exact queries. Final-test construction,
+            continual-training windows and Amazon neural training remain undone.
+          </p>
+          <p class="small">
+            <a href="docs/IMPLEMENTATION.md#electronics-chronological-histories--25-october-2026">Rules and commands</a> ·
+            <a href="docs/SOURCES.md#electronics-history-quality-and-sequence-preparation--25-october-2026">Measured counts and limits</a>
+          </p>
+        </section>
+        <section id="amazon-category-baselines">
+          <div class="eyebrow">29 · 25 October 2026 · Baselines on frozen queries</div>
+          <h2>Repeating the last category is a weak first guess here</h2>
+          <p>
+            All 1,547,555 prepared validation queries use the same 283 candidates.
+            Popularity counts the prepared training targets and gets Recall@1
+            41.96%, Recall@3 60.97% and MRR@3 0.4983. Repeating only the last
+            category gets Recall@1 28.81%.
+          </p>
+          <p>
+            A separate last + popularity ranking puts that category first and
+            fills the other ranks from popularity without duplicates. It reaches
+            Recall@3 62.04% but MRR@3 0.4400: slightly more top-three coverage,
+            with worse ordering. A full history model still needs to demonstrate
+            an advantage over these simple baselines.
+          </p>
+          <p>
+            All prepared-file hashes and executed code hashes were verified.
+            The CPU run took five seconds; all 55 tests pass with optional DuckDB.
+            History-length and target-source slices are recorded. There was no
+            final-test scoring, neural fitting or significance analysis. These
+            cohort-specific results replace the earlier all-event audit scores
+            for model comparison.
+          </p>
+          <p class="small">
+            <a href="docs/SOURCES.md#baselines-on-the-prepared-validation-cohort--25-october-2026">Result table and limits</a> ·
+            <a href="docs/IMPLEMENTATION.md#category-baselines-on-prepared-queries--25-october-2026">Execution and ranking rules</a>
+          </p>
+        </section>
+        <section id="amazon-category-periods">
+          <div class="eyebrow">30 · 25 October 2026 · Periods and comparison protocol</div>
+          <h2>Split training by time, with nearly equal numbers of predictions per period</h2>
+          <p>
+            Eight timestamp blocks each contain about 2.43 million training
+            targets. Period 1 spans 1999–2014; period 8 spans October 2020–June
+            2021. These blocks are balanced by number of targets, not by calendar
+            duration. Validation and final test did not determine their boundaries.
+          </p>
+          <p>
+            By period 8, 283 categories have appeared in training targets or
+            histories, though 12 appear only as context and never as supervised
+            targets. The proposed pilot uses 50,000 targets from each of the first
+            two periods and at most 1,000 replay examples. That pilot has passed:
+            ADER selected 808 replay examples and restored the shared period-1
+            optimizer state in both method branches. It reports no ranking metrics.
+          </p>
+          <p>
+            The proposed full comparison runs the same category-attention model
+            with replay/distillation and with dropout alone, over all eight periods
+            and three seeds. Validation is used only after period 8 because its
+            queries' histories can cover later training periods. Test queries and
+            results remain untouched. The settings are a concrete proposal, not
+            an approved team decision; only the bounded execution pilot has run.
+          </p>
+          <p class="small">
+            <a href="docs/IMPLEMENTATION.md#chronological-category-periods-and-comparison-protocol--25-october-2026">Period counts and proposed protocol</a> ·
+            <a href="docs/SOURCES.md#chronological-training-periods--25-october-2026">Source provenance</a>
+          </p>
+        </section>
+        <section id="amazon-ader-category-pilot">
+          <div class="eyebrow">31 · 25 October 2026 · Two-period ADER category pilot</div>
+          <h2>The training and replay path runs on the Amazon category histories</h2>
+          <p>
+            The user authorized a bounded GPU pilot using 50,000 training targets
+            from each of periods 1 and 2. One period-1 model and optimizer state
+            were saved, then restored for both period-2 methods: ADER with
+            herded replay/distillation and the same model with dropout only.
+            Each branch made 196 period-2 updates and finished at optimizer step 392.
+          </p>
+          <p>
+            ADER selected and consumed 808 replay examples from the 1,000 cap.
+            Teacher scores cover the 216 old categories; the second period has
+            246 active categories. The GPU job completed in 38 seconds, with
+            about 1.56 GiB process peak RSS and 3.0 GiB sampled GPU memory.
+            Validation/test were not read and no ranking scores were calculated.
+          </p>
+          <p>
+            This verifies execution, checkpoint continuation and replay wiring.
+            It does not measure recommendation quality or establish an ADER
+            advantage. The full eight-period, three-seed comparison remains a
+            proposal; final-test data is still untouched.
+          </p>
+          <p class="small">
+            <a href="docs/IMPLEMENTATION.md#two-period-ader-category-pilot--25-october-2026">Pilot settings, run record and limits</a>
+          </p>
+        </section>
+        <section id="amazon-ader-category-results">
+          <div class="eyebrow">32 · 25 October 2026 · Full-data training and validation</div>
+          <h2>Across three seeds, ADER and dropout-only are nearly tied</h2>
+          <p>
+            Three seeds trained across all eight periods. Each method saw all
+            19,478,807 training targets once per seed. After all six runs
+            passed, the models scored the same 1,547,555 validation users over
+            283 category candidates. The test partition remained unopened.
+          </p>
+          <table>
+            <thead>
+              <tr><th scope="col">Method</th><th scope="col">Recall@1</th><th scope="col">Recall@3</th><th scope="col">MRR@3</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Dropout</th><td>41.8348%</td><td>66.3715%</td><td>0.524956</td></tr>
+              <tr><th scope="row">ADER</th><td>41.8506%</td><td>66.4103%</td><td>0.525209</td></tr>
+            </tbody>
+          </table>
+          <p>
+            ADER's mean gains were only 0.0158 percentage points at Recall@1,
+            0.0389 points at Recall@3 and 0.000253 at MRR@3, smaller than
+            variation across seeds. These results do not show a clear ADER
+            advantage. They measure next-review category prediction, not the
+            paper's next-click task or same-user forgetting.
+          </p>
+          <p class="small">
+            <a href="docs/IMPLEMENTATION.md#completed-three-seed-run-and-validation--25-october-2026">Protocol, standard deviations and limits</a>
           </p>
         </section>
         <footer>

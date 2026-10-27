@@ -10,14 +10,16 @@
 2. [October meeting synthesis](docs/MEETING-2026-10-15.md) — supported direction versus unresolved choices.
 3. [Current context](CONTEXT.md) and [running the boilerplate](docs/IMPLEMENTATION.md).
 4. [Executable notebook](notebooks/01_shared_experiment.ipynb).
-5. [ADER reading and replication protocol](docs/ADER.md) — paper/code review, local TensorFlow verification and cluster handoff; no real-data replication yet.
+5. [ADER reading and replication protocol](docs/ADER.md) — paper/code review, cluster workflow and the completed seed-0 comparison.
+
+6. [Amazon category ADER plan](docs/IMPLEMENTATION.md#chronological-category-periods-and-comparison-protocol--25-october-2026) — prepared chronology and proposed comparison; no Amazon neural training yet.
 
 ## The two packages
 
 | Path | Owns |
 | --- | --- |
 | `src/cp4285/experiment/` | Data/protocol ABC, immutable inputs, model ABC, scheduling, shared selection/evaluation, safe artifacts and plots |
-| `src/cp4285/models/` | Model implementations and model-side ablations; currently only a counting isolation control |
+| `src/cp4285/models/` | Model implementations and model-side ablations; a counting isolation control plus separate category popularity/last-category ranking functions |
 | `notebooks/` | Reader-facing executable explanation, importing both packages |
 | `tests/` | Contract/lifecycle checks; executable documentation and notebook examples |
 | `scripts/` | Standalone upstream ADER verification and [DIGINETICA ADER/Dropout comparison](docs/ADER.md#full-16-window-comparison), using an isolated environment |
